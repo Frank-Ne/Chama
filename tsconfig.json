@@ -1,0 +1,19 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "paths": {
+      "@/*": [
+        "./*"
+      ]
+    }
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    "constants/users.js",
+    "app/+not-found.js",
+    "app/_layout.js",
+    "app/(tabs)/AmountAdjuster.js"
+  ]
+}
