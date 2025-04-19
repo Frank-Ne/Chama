@@ -1,19 +1,35 @@
+// app/LoginScreen.js
 import React, { useState } from 'react';
-import { View, Text, TextInput, Button, Alert, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, TextInput, Alert, StyleSheet, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
+import { auth } from '../firebase/firebaseConfig';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 
 export default function LoginScreen() {
   const router = useRouter();
   const [userID, setUserID] = useState('');
   const [password, setPassword] = useState('');
 
-  const handleLogin = () => {
-    if (userID && password === '1234') {
-      Alert.alert('✅ Login Successful', 'Welcome to Jamii Chama!', [
-        { text: 'Proceed', onPress: () => router.replace('/deposit') },
-      ]);
-    } else {
-      Alert.alert('❌ Wrong Password', 'Please re-enter your password.');
+  const handleLogin = async () => {
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, userID, password);
+      console.log("Login successful");
+
+      if (password === '1234') {
+        // Default password — redirect to Forgot Password
+        Alert.alert('⚠️ Change Your Password', 'You are using the default password. Please update it.', [
+          { text: 'Update Password', onPress: () => router.replace('/forgot') },
+        ]);
+      } else {
+        // Password changed — go to Dashboard
+        Alert.alert('✅ Login Successful', 'Welcome to Jamii Chama!', [
+          { text: 'Proceed', onPress: () => router.replace('/dashboard') },
+        ]);
+      }
+
+    } catch (error) {
+      console.error("Login failed", error.message);
+      Alert.alert('❌ Wrong Credentials', 'Please re-enter your credentials.');
     }
   };
 
@@ -36,7 +52,9 @@ export default function LoginScreen() {
         style={styles.input}
       />
 
-      <Button title="Login" color="#F85A40" onPress={handleLogin} />
+      <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
+        <Text style={styles.loginText}>Login</Text>
+      </TouchableOpacity>
 
       {/* Forgot Password */}
       <TouchableOpacity onPress={() => router.push('/forgot')}>
@@ -55,13 +73,30 @@ export default function LoginScreen() {
 
 const styles = StyleSheet.create({
   container: { padding: 24, flex: 1, justifyContent: 'center' },
-  title: { fontSize: 26, marginBottom: 20, textAlign: 'center', fontFamily: 'Lato', color: '#F85A40' },
+  title: {
+    fontSize: 26,
+    marginBottom: 20,
+    textAlign: 'center',
+    fontFamily: 'Lato',
+    color: '#F85A40',
+  },
   input: {
     borderColor: '#F85A40',
     borderWidth: 1,
     padding: 10,
     borderRadius: 8,
     marginBottom: 15,
+  },
+  loginButton: {
+    backgroundColor: '#F85A40',
+    padding: 15,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  loginText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
   forgot: {
     color: '#F85A40',
@@ -81,3 +116,4 @@ const styles = StyleSheet.create({
     textDecorationLine: 'underline',
   },
 });
+

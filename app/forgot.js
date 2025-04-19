@@ -1,62 +1,120 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Button, Alert, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, TextInput, StyleSheet, Alert, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
+import { auth } from '../firebase/firebaseConfig';
+import {
+  EmailAuthProvider,
+  updatePassword,
+  reauthenticateWithCredential,
+  signInWithEmailAndPassword,
+} from 'firebase/auth';
 
-export default function ForgotPassword() {
+export default function ForgotPasswordScreen() {
   const router = useRouter();
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [userID, setUserID] = useState('');
-  const [newPass, setNewPass] = useState('');
-  const [confirmPass, setConfirmPass] = useState('');
 
-  const handlePasswordChange = () => {
-    if (newPass !== confirmPass) {
-      Alert.alert('❌ Error', 'Passwords do not match.');
+  const [email, setEmail] = useState('');
+  const [oldPassword, setOldPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+
+  const handlePasswordReset = async () => {
+    if (newPassword !== confirmNewPassword) {
+      Alert.alert('⚠️ Password Mismatch', 'New passwords do not match.');
       return;
     }
 
-    Alert.alert('✅ Success', 'Password changed successfully.', [
-      { text: 'Go to Login', onPress: () => router.replace('/login') },
-    ]);
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, oldPassword);
+      const user = userCredential.user;
+
+      const credential = EmailAuthProvider.credential(email, oldPassword);
+      await reauthenticateWithCredential(user, credential);
+
+      await updatePassword(user, newPassword);
+      Alert.alert('✅ Success', 'Password changed successfully. Please login.', [
+        { text: 'OK', onPress: () => router.replace('/login') },
+      ]);
+    } catch (error) {
+      console.error("Password reset failed:", error.message);
+      Alert.alert('❌ Error', 'Password reset failed. Please check your credentials and try again.');
+    }
   };
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Reset Your Password</Text>
 
-      <TextInput placeholder="First Name" value={firstName} onChangeText={setFirstName} style={styles.input} />
-      <TextInput placeholder="Last Name" value={lastName} onChangeText={setLastName} style={styles.input} />
-      <TextInput placeholder="User ID" value={userID} onChangeText={setUserID} style={styles.input} />
-      <TextInput placeholder="New Password" secureTextEntry value={newPass} onChangeText={setNewPass} style={styles.input} />
-      <TextInput placeholder="Re-enter Password" secureTextEntry value={confirmPass} onChangeText={setConfirmPass} style={styles.input} />
+      <TextInput
+        placeholder="Enter your Email (User ID)"
+        value={email}
+        onChangeText={setEmail}
+        style={styles.input}
+        autoCapitalize="none"
+      />
+      <TextInput
+        placeholder="Enter Old Password"
+        value={oldPassword}
+        onChangeText={setOldPassword}
+        style={styles.input}
+        secureTextEntry
+      />
+      <TextInput
+        placeholder="Enter New Password"
+        value={newPassword}
+        onChangeText={setNewPassword}
+        style={styles.input}
+        secureTextEntry
+      />
+      <TextInput
+        placeholder="Confirm New Password"
+        value={confirmNewPassword}
+        onChangeText={setConfirmNewPassword}
+        style={styles.input}
+        secureTextEntry
+      />
 
-      <Button title="Confirm" color="#F85A40" onPress={handlePasswordChange} />
+      <TouchableOpacity style={styles.button} onPress={handlePasswordReset}>
+        <Text style={styles.buttonText}>Update Password</Text>
+      </TouchableOpacity>
 
-      {/* Back to Login button */}
       <TouchableOpacity onPress={() => router.replace('/login')}>
-        <Text style={styles.backToLogin}>← Back to Login</Text>
+        <Text style={styles.backText}>← Back to Login</Text>
       </TouchableOpacity>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 24, flex: 1, justifyContent: 'center' },
-  title: { fontSize: 24, marginBottom: 20, textAlign: 'center', color: '#F85A40' },
+  container: { flex: 1, padding: 24, justifyContent: 'center' },
+  title: {
+    fontSize: 24,
+    color: '#F85A40',
+    marginBottom: 20,
+    textAlign: 'center',
+    fontWeight: 'bold',
+  },
   input: {
     borderColor: '#F85A40',
     borderWidth: 1,
+    borderRadius: 8,
     padding: 10,
-    borderRadius: 10,
     marginBottom: 15,
   },
-  backToLogin: {
-    marginTop: 20,
+  button: {
+    backgroundColor: '#F85A40',
+    padding: 15,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  buttonText: {
+    color: '#fff',
+    fontWeight: '600',
+  },
+  backText: {
     color: '#F85A40',
     textAlign: 'center',
-    fontSize: 16,
+    marginTop: 20,
     textDecorationLine: 'underline',
-    fontWeight: '600',
   },
 });
